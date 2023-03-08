@@ -1,9 +1,12 @@
-
-from scapy.all import *
+import random
 import time
 
-ethernet_src = get_if_hwaddr("enp0s3")
+from scapy.all import *
+from scapy.layers.dhcp import *
+from scapy.layers.dns import *
 
+ethernet_src = get_if_hwaddr("enp0s3")
+my_new_ip = None
 
 def dhcp_connect():
 
@@ -38,25 +41,45 @@ def dhcp_connect():
         assigned_ip = ack[BOOTP].yiaddr
         print(f"Got the ack\nthe new ip is:{assigned_ip} ")
         lease_time = ack[DHCP].options[0][1]
-        time.sleep(10)
+        time.sleep(2)
         return assigned_ip
     else:
         print("Error no dhcp ack receive")
         exit()
 
 
-def dhcp_release(ip):
+def dhcp_release():
     rel = Ether(src=ethernet_src, dst='ff:ff:ff:ff:ff:ff') / \
-          IP(src=ip, dst='255.255.255.255') / \
+          IP(src=my_new_ip, dst='255.255.255.255') / \
           UDP(sport=68, dport=67) / \
           BOOTP(chaddr=ethernet_src) / \
           DHCP(options=[("message-type", "release"),
-                        ("requested_addr", ip),
+                        ("requested_addr", my_new_ip),
                         "end"])
     sendp(rel, iface="enp0s3")
     print("AFTER SENDING THE RELEASE")
 
 
+def get_req():
+    ans=input("Enter the required domain/ip:")
+    return ans
+
+
+def dns_query():
+    op=0
+    addorip = get_req()
+    if(addorip[0]).isdigit():
+        op=1
+    print(f"{addorip}  ,{op}")
+    client_q = IP(src=my_new_ip,dst="192.168.1.60")/\
+        UDP(dport=53)/\
+        DNS(qr=0,rd=1,qd=DNSQR(qname=addorip,qtype='A'), opcode=op)
+    ans = sr1(client_q,iface="enp0s3")
+    print(ans.show())
+
+
 if __name__ == '__main__':
-    client_ip = dhcp_connect()
-    dhcp_release(client_ip)
+    my_new_ip = dhcp_connect()
+    dns_query()
+
+    dhcp_release()

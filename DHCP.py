@@ -1,5 +1,7 @@
 from scapy.all import *
+from scapy.layers.dhcp import *
 import time
+
 
 mac = get_if_hwaddr("enp0s3")
 conf.iface = 'enp0s3'
