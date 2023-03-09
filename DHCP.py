@@ -5,19 +5,21 @@ import time
 
 mac = get_if_hwaddr("enp0s3")
 conf.iface = 'enp0s3'
+dhcp_ip = "10.168.1.1"
+
 # SERVER_IP = "10.0.2.15"
 _ip_list = {
-    "192.168.1.2": False,
-    "192.168.1.3": False,
-    "192.168.1.4": False,
-    "192.168.1.5": False,
-    "192.168.1.6": False
+    "10.168.1.2": False,
+    "10.168.1.3": False,
+    "10.168.1.4": False,
+    "10.168.1.5": False,
+    "10.168.1.6": False
 }
 
 
 def listen_dhcp():
     # Make sure it is DHCP with the filter options
-    sniff(prn=handle_dhcp, filter='udp and (port 68)', iface="enp0s3")
+    sniff(prn=handle_dhcp, filter='udp and (port 68 and port 67)', iface="enp0s3")
 
 
 def handle_dhcp(p):
@@ -38,7 +40,7 @@ def handle_dhcp(p):
             client_mac = p[Ether].src
             client_ip = p[IP].src
             offer = Ether( dst="ff:ff:ff:ff:ff:ff") / \
-                    IP() / \
+                    IP(src=dhcp_ip) / \
                     UDP(sport=67, dport=68) / \
                     BOOTP(op=2, yiaddr=ip, chaddr=client_mac) / \
                     DHCP(options=[("message-type", "offer"),
@@ -51,7 +53,7 @@ def handle_dhcp(p):
     if DHCP in p and p[DHCP].options[0][1] == 3:
         print("DHCP Request")
         ack = Ether(src=mac, dst=p[Ether].src) / \
-                IP(dst=p[IP].src) / \
+                IP(src= dhcp_ip,dst=p[IP].src) / \
                 UDP(sport=67, dport=68) / \
                 BOOTP(op=2, yiaddr=p[IP].src, chaddr=p[Ether].src) / \
                 DHCP(options=[("message-type", "ack"),

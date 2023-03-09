@@ -8,15 +8,16 @@ from scapy.layers.dns import *
 ethernet_src = get_if_hwaddr("enp0s3")
 my_new_ip = None
 
+
 def dhcp_connect():
 
     discover = Ether(dst='ff:ff:ff:ff:ff:ff') /\
-            IP(dst='255.255.255.255') /\
+            IP(src="0.0.0.0",dst='255.255.255.255') /\
             UDP(sport=68, dport=67) /\
             BOOTP(chaddr=ethernet_src) /\
             DHCP(options=[('message-type', 'discover'), 'end'])
     sendp(discover, iface="enp0s3")
-    offer = sniff(filter="udp and (port 67)", count=1)[0]
+    offer = sniff(filter="udp and (port 68 and port 67)", count=1)[0]
     if offer is None:
         print("Error no dhcp offer receive")
         exit()
@@ -35,7 +36,7 @@ def dhcp_connect():
                           "end"])
     sendp(req, iface="enp0s3")
     print("AFTER SENDING THE REQUEST")
-    ack = sniff(filter="udp and (port 67)", count=1)[0]
+    ack = sniff(filter="udp and (port 68 and port 67)", count=1)[0]
     print("AFTER GETING THE ACK")
     if ack:
         assigned_ip = ack[BOOTP].yiaddr
@@ -70,16 +71,20 @@ def dns_query():
     addorip = get_req()
     if(addorip[0]).isdigit():
         op=1
-    print(f"{addorip}  ,{op}")
-    client_q = IP(src=my_new_ip,dst="192.168.1.60")/\
-        UDP(dport=53)/\
-        DNS(qr=0,rd=1,qd=DNSQR(qname=addorip,qtype='A'), opcode=op)
-    ans = sr1(client_q,iface="enp0s3")
-    print(ans.show())
+    print(f"{addorip},{op}")
+    client_q = IP(dst="10.168.1.60")/\
+               UDP(sport=3155,dport=53)/\
+               DNS(rd=1,qd=DNSQR(qname=addorip))
+
+    send(client_q)
+    # time.sleep(2)
+    ans = sniff(filter="udp and port 3155", count=1)[0]
+    # ans = sr1(client_q, verbose=0)
+    if ans:
+        print(ans.show())
 
 
 if __name__ == '__main__':
     my_new_ip = dhcp_connect()
     dns_query()
-
     dhcp_release()
