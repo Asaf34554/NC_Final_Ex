@@ -42,7 +42,7 @@ def dhcp_connect():
         assigned_ip = ack[BOOTP].yiaddr
         print(f"Got the ack\nthe new ip is:{assigned_ip} ")
         lease_time = ack[DHCP].options[0][1]
-        time.sleep(2)
+        # time.sleep(2)
         return assigned_ip
     else:
         print("Error no dhcp ack receive")
@@ -66,25 +66,23 @@ def get_req():
     return ans
 
 
-def dns_query():
-    op=0
+def dns_query(my_ip):
     addorip = get_req()
-    if(addorip[0]).isdigit():
-        op=1
-    print(f"{addorip},{op}")
-    client_q = IP(dst="10.168.1.60")/\
-               UDP(sport=3155,dport=53)/\
+    print(f"{my_ip}")
+    client_q = IP(src=my_ip)/\
+               UDP(sport=random.randint(100,1000),dport=53)/\
                DNS(rd=1,qd=DNSQR(qname=addorip))
+    print(client_q.show())
 
-    send(client_q)
-    # time.sleep(2)
-    ans = sniff(filter="udp and port 3155", count=1)[0]
-    # ans = sr1(client_q, verbose=0)
+    # send(client_q)
+    # time.sleep(0.2)
+    # ans = sniff(filter="udp and port 53", count=1)[0]
+    ans = sr1(client_q)
     if ans:
         print(ans.show())
 
 
 if __name__ == '__main__':
     my_new_ip = dhcp_connect()
-    dns_query()
+    dns_query(my_new_ip)
     dhcp_release()
