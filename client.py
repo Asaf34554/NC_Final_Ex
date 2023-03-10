@@ -68,18 +68,16 @@ def get_req():
 
 def dns_query(my_ip):
     addorip = get_req()
-    print(f"{my_ip}")
-    client_q = IP(src=my_ip)/\
-               UDP(sport=random.randint(100,1000),dport=53)/\
+    client_q = IP(src=my_ip,dst="10.168.1.60")/\
+               UDP(sport=3155,dport=53)/\
                DNS(rd=1,qd=DNSQR(qname=addorip))
-    print(client_q.show())
 
-    # send(client_q)
-    # time.sleep(0.2)
-    # ans = sniff(filter="udp and port 53", count=1)[0]
-    ans = sr1(client_q)
+    send(client_q)
+    time.sleep(2)
+    ans = sniff(filter="udp and port 3155", count=1)[0]
     if ans:
         print(ans.show())
+        print("SHEAF BEN ZONA LO YAGID SHTA LO YODEA")
 
 
 if __name__ == '__main__':
