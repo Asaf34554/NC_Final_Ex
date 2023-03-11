@@ -9,7 +9,7 @@ dns_ip = "10.168.1.60"
 
 def listen_dns():
     # Make sure it is DHCP with the filter options
-    sniff(prn=handle_dns, filter='udp and (port 53)', iface="enp0s3")
+    sniff(prn=handle_dns, filter='udp and (port 53) and dst host 10.168.1.60', iface="enp0s3")
 
 
 def handle_dns(p):
@@ -25,11 +25,13 @@ def handle_dns(p):
             response[IP].dst = p[IP].src
             response[UDP].dport = p[UDP].sport
             response[UDP].src = 53
-            print("***************************\n after the changes: \n")
+            # print("***************************\n after the changes: \n")
             print(response.show())
-            time.sleep(3)
+            # time.sleep(0.5)
             send(response,verbose=0)
-            print("closing the dns")
+            print(f"Sent DNS response to client: {response[IP].dst}\nDomain:{response[DNSRR].rrname}\nAddress:{response[DNSRR].rdata}\n")
+        else:
+            print("Error occurred in getting resolver response, closing the dns.")
             exit()
 
 
