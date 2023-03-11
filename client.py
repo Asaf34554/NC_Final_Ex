@@ -84,7 +84,6 @@ def dns_query(my_ip):
         print("Couldn't get response from DNS server")
 
 
-
 if __name__ == '__main__':
     my_new_ip = dhcp_connect()
     dns_resp = dns_query(my_new_ip)
