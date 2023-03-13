@@ -18,7 +18,6 @@ _ip_list = {
 
 
 def listen_dhcp():
-    # Make sure it is DHCP with the filter options
     sniff(prn=handle_dhcp, filter='udp and (port 68 and port 67)', iface="enp0s3")
 
 
@@ -36,7 +35,6 @@ def handle_dhcp(p):
             else:
                 print(f"ip :{ip} is used")
         if ip is not None:
-            # Build the DHCP offer packet with the IP address
             client_mac = p[Ether].src
             client_ip = p[IP].src
             offer = Ether( dst="ff:ff:ff:ff:ff:ff") / \

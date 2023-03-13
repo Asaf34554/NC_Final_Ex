@@ -1,7 +1,5 @@
 import time
 
-from lxml.sax import SaxError
-# from termcolor import colored
 from io import BytesIO
 import socket
 import requests
@@ -105,8 +103,8 @@ def rudp_connecet(msg_num):
 
 def Save_or_Show(img):
     global IMG_COUNTER
-    rod = input(colored("Do you prefer to save the meme or to show it on the screen?:\n<1>:Save.\n<2>:Show.\n", "red",
-                        "on_black", attrs=["bold", "underline"]))
+    print(colored("Do you prefer to save the meme or to show it on the screen?:","red","on_black", attrs=["bold", "underline"]))
+    rod = input(colored("<1>:Save.\n<2>:Show.\n", "blue","on_black", attrs=["bold", "underline"]))
     # _img_num =0
     if rod == '1' or rod.upper() == "SAVE":
         if isinstance(img,str):
@@ -117,11 +115,13 @@ def Save_or_Show(img):
             img.save(f'/home/meme_{IMG_COUNTER}.jpg')
         IMG_COUNTER +=1
     elif rod == '2' or rod.upper() == "SHOW":
-        if not isinstance(img, str):
-            img = Image.open(io.BytesIO(img_bytes))
+        if isinstance(img, str):
+            get_meme(img)
+        elif isinstance(img,bytes):
+            img = Image.open(io.BytesIO(img))
             img.show()
         else:
-            get_meme(img)
+            print("Wrong format")
 
 
 def get_meme(url):
@@ -133,6 +133,7 @@ def get_meme(url):
 
 def connect_tcp(msg_num):
     client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     client_socket.bind(CLIENT_ADDRESS)
     client_socket.connect(SERVER_ADDRESS)
 
@@ -144,7 +145,7 @@ def connect_tcp(msg_num):
 
     print(f"after the while\n{url_data.decode()}")
     client_socket.close()
-    return url_data.decode
+    return url_data.decode()
 
 
 if __name__ == '__main__':
@@ -152,12 +153,14 @@ if __name__ == '__main__':
 
     print(colored("Welcome to the Meme Generator App","yellow","on_black",attrs=["bold","underline"]))
     while True:
-        proto=input(colored("Choose the Protocol type you want to communicate with:\n<1>:TCP.\n<2>:RUDP.\n","red","on_black",attrs=["bold","underline"]))
-        print(proto)
+        proto=input(colored("Choose the Protocol type you want to communicate with:\n<1>:TCP.\n<2>:RUDP.\n<9>:Quit App\n","red","on_black",attrs=["bold","underline"]))
         if proto == '1' or proto.upper() == "TCP":
-            opt=input(colored("Do you want to choose a meme by yourself or for we to generate a random meme for you?:\n<1>:Choose from library.\n<2>:Surprise me!.\n","red","on_black",attrs=["bold","underline"]))
+            print(colored("Do you want to choose a meme by yourself or for we to generate a random meme for you?:","red","on_black",attrs=["bold","underline"]))
+            opt=input(colored("<1>:Choose from library.\n<2>:Surprise me!.\n","blue","on_black",attrs=["bold","underline"]))
             if opt=='1':
-                meme_opt = input("Choose the number of your choice from the Meme-Library:\n<1>:Frustrated Meme\n<2>:Surprised Meme\n<3>:Angry Meme\n<4>:'Stoned' Meme\n<5>:Happy Meme\n<6>:Bored Meme\n<7>:Nerd Meme\n")
+                print(colored("Choose the number of your choice from the Meme-Library:","red","on_black",attrs=["bold","underline"]))
+                meme_opt = input(colored("<1>:Frustrated Meme\n<2>:Surprised Meme\n<3>:Angry Meme\n<4>:'Stoned' "
+                                         "Meme\n<5>:Happy Meme\n<6>:Bored Meme\n<7>:Nerd Meme\n","blue","on_black"))
                 meme_opt=str((int(meme_opt)-1))
                 url=connect_tcp(meme_opt)
                 Save_or_Show(url)
@@ -167,18 +170,24 @@ if __name__ == '__main__':
                 Save_or_Show(url)
 
         elif proto == '2' or proto.upper() == "RUDP":
-            opt=input(colored("Do you want to choose a meme by yourself or for we to generate a random meme for you?:\n<1>:Choose from library.\n<2>:Surprise me!.\n","red","on_black",attrs=["bold","underline"]))
+            print(colored("Do you want to choose a meme by yourself or for we to generate a random meme for you?:","red","on_black",attrs=["bold","underline"]))
+            opt=input(colored("<1>:Choose from library.\n<2>:Surprise me!.\n","blue","on_black",attrs=["bold","underline"]))
             if opt=='1':
-                meme_opt = input("Choose the number of your choice from the Meme-Library:\n<1>:Frustrated Meme\n<2>:Surprised Meme\n<3>:Angry Meme\n<4>:'Stoned' Meme\n<5>:Happy Meme\n<6>:Bored Meme\n<7>:Nerd Meme\n")
+                print(colored("Choose the number of your choice from the Meme-Library:","red","on_black",attrs=["bold","underline"]))
+                meme_opt = input(colored("<1>:Frustrated Meme\n<2>:Surprised Meme\n<3>:Angry Meme\n<4>:'Stoned' "
+                                         "Meme\n<5>:Happy Meme\n<6>:Bored Meme\n<7>:Nerd Meme\n","blue","on_black"))
                 meme_opt = str(int(meme_opt) - 1)
                 img_bytes=rudp_connecet(meme_opt)
-                img = Image.open(io.BytesIO(img_bytes))
-                Save_or_Show(img)
+                # img = Image.open(io.BytesIO(img_bytes))
+                Save_or_Show(img_bytes)
             elif opt=='2':
                 meme_opt = str(random.randint(0,6))
                 img_bytes=rudp_connecet(meme_opt)
-                img = Image.open(io.BytesIO(img_bytes))
-                Save_or_Show(img)
+                # img = Image.open(io.BytesIO(img_bytes))
+                Save_or_Show(img_bytes)
 
+        elif proto == '9':
+            print(colored("Hope you enjoyed! See you soon :)\n","yellow","on_black",attrs=["bold","underline"]))
+            exit()
         else:
-            print(colored("Input Error, restarting App!","black","on_yellow",attrs=["bold","underline"]))
+            print(colored("Input Error, restarting App!\n","black","on_yellow",attrs=["bold","underline"]))

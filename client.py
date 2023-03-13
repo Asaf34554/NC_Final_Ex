@@ -22,7 +22,7 @@ def dhcp_connect():
         print("Error no dhcp offer receive")
         exit()
     else:
-        print("GOT The Offer")
+        # print("GOT The Offer")
         yiaddr = offer[BOOTP].yiaddr
         siaddr = offer[IP].src
 
@@ -35,9 +35,9 @@ def dhcp_connect():
                           ("server_id",siaddr),
                           "end"])
     sendp(req, iface="enp0s3")
-    print("AFTER SENDING THE REQUEST")
+    # print("AFTER SENDING THE REQUEST")
     ack = sniff(filter="udp and (port 68 and port 67)", count=1)[0]
-    print("AFTER GETING THE ACK")
+    # print("AFTER GETING THE ACK")
     if ack:
         assigned_ip = ack[BOOTP].yiaddr
         print(f"Got the ack\nthe new ip is:{assigned_ip} ")
@@ -78,7 +78,7 @@ def dns_query(my_ip):
     if ans:
         # print(ans.show())
         # print("SHEAF BEN ZONA LO YAGID SHTA LO YODEA")
-        print(f"Received response from DNS server:-->{ans[DNSRR].rdata}----Domain:-->{ans[DNSRR].rrname}")
+        print(f"Received response from DNS server:-->{ans[DNSRR].rdata}\nDomain:-->{ans[DNSRR].rrname}")
         return ans[DNSRR].rdata
     else:
         print("Couldn't get response from DNS server")
