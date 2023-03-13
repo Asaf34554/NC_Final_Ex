@@ -11,10 +11,11 @@ RUDP_MAX_SIZE = 62000
 SERVER_ADDRESS = ("127.0.0.10",30493)
 
 
+
 class RUDP(Packet):
     name = "RUDP"
     fields_desc = [
-        ShortField("src_port", 80),
+        ShortField("src_port", 30495),
         ShortField("dst_port", 80),
         IntField("seq_num", 0),
         IntField("ack_num", 0),
@@ -22,7 +23,7 @@ class RUDP(Packet):
         ShortField("window", 8192),
         ShortField("checksum", None),
         ShortField("urgent_ptr", 0),
-        StrField("payload", "")
+        StrField("message", "")
     ]
 
 
@@ -60,7 +61,7 @@ def tcp_connection(client_socket,address):
 
 
 def get_image(meme_num):
-    return requests.get(memes[int(meme_num)][0])
+    return requests.get(memes[int(meme_num)][0]).content
 
     # if our_meme.status_code == 200:
     #     image = Image.open('/home/assaf/PycharmProjects/FinalEx/Object.g')
@@ -72,81 +73,86 @@ def get_image(meme_num):
 def rudp_connection():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(SERVER_ADDRESS)
-    sock.settimeout(1.5)
-
-    # Wait for SYN packet from client
-    syn_received = False
-    pkt = RUDP()
-    client_address = None
-    while not syn_received:
-        time.sleep(0.3)
-        data, addr = sock.recvfrom(RUDP_MAX_SIZE)
-        pkt = RUDP(data)
-        if pkt.flags == 'S':
-            syn_received = True
-            client_address = addr
-
-
-    # Send SYN-ACK packet to client
-    seq_num = 0
-    ack_num = pkt.seq_num + 1
-    syn_ack_packet = RUDP(dst_port=pkt.src_port,src_port=SERVER_ADDRESS[1], flags=['S','A'], seq_num=seq_num, ack_num=ack_num)
-    time.sleep(0.2)
-    sock.sendto(bytes(syn_ack_packet),client_address)
-    print(syn_ack_packet.show())
-    # Wait for ACK packet from client
-    ack_image_received = False
-    while not ack_image_received:
-        # time.sleep(0.1)
-        data, addr = sock.recvfrom(RUDP_MAX_SIZE)
-        pkt = RUDP(data)
-        if pkt.flags == 'A' :
-            ack_num += len(data)
-            ack_image_received = True
-    seq_num = pkt.ack_num
-    image_to_send = get_image(pkt.payload)
-    img_size = len(image_to_send.content)
-    chunk_size = RUDP_MAX_SIZE - 4000
-    start_idx = 0
-    end_idx = chunk_size
-    while start_idx < img_size:
-        # Send packet with image data
-        pkt = RUDP(dst_port=pkt.dst_port, seq_num=start_idx+seq_num, ack_num=ack_num, payload=image_to_send[start_idx:end_idx])
-        sock.sendto(bytes(pkt),client_address)
-
-        # Wait for ACK packet from client
-        ack_received = False
-        while not ack_received:
+    while True:
+        syn_received = False
+        pkt = RUDP()
+        client_address = None
+        while not syn_received:
+            # time.sleep(0.3)
             data, addr = sock.recvfrom(RUDP_MAX_SIZE)
             pkt = RUDP(data)
-            if pkt.flags == 'A' and pkt.ack_num == end_idx:
-                ack_received = True
-
-        # Update indexes for next chunk
-        start_idx = end_idx
-        end_idx += chunk_size
-
-    # Wait for FIN request packet from client
-    fin_requested = False
-    while not fin_requested:
-        data, addr = sock.recvfrom(RUDP_MAX_SIZE)
-        pkt = RUDP(data)
-        if pkt.flags == "F":
-            fin_requested = True
-
-    # Send FIN packet to client
-    fin_packet = RUDP(dst_port=client_address[1], flags="FA", seq_num=start_idx, ack_num=ack_num)
-    sock.sendto(bytes(fin_packet),client_address)
-    fin_ack = False
-    while not fin_ack:
-        data, addr = sock.recvfrom(RUDP_MAX_SIZE)
-        pkt = RUDP(data)
-        if pkt.flags == 'A':
-            fin_received = True
+            if pkt.flags == 'S':
+                syn_received = True
+                client_address = addr
 
 
-if __name__ == '__main__':
-    # tcp_listen()
-    rudp_connection()
+        # Send SYN-ACK packet to client
+        seq_num = 0
+        ack_num = pkt.seq_num + 1
+        syn_ack_packet = RUDP(dst_port=pkt.src_port,src_port=SERVER_ADDRESS[1], flags=['S','A'], seq_num=seq_num, ack_num=ack_num)
+        # time.sleep(0.2)
+        sock.sendto(bytes(syn_ack_packet),client_address)
+        print(syn_ack_packet.show())
+        # Wait for ACK packet from client
+        ack_image_received = False
+        while not ack_image_received:
+            # time.sleep(0.1)
+            data, addr = sock.recvfrom(RUDP_MAX_SIZE)
+            pkt = RUDP(data)
+            if pkt.flags == 'A' and pkt.message is not None:
+                ack_num += len(data)
+                ack_image_received = True
+        seq_num = pkt.ack_num
+        # image_to_send = get_image(pkt.message)
+        image_to_send = get_image(pkt.message)
+        chunks = [image_to_send[i:i + RUDP_MAX_SIZE - 4000] for i in range(0, len(image_to_send), RUDP_MAX_SIZE - 4000)]
 
+        # Send packets with image data
+        seq_num = pkt.ack_num
+        for i, chunk in enumerate(chunks):
+            pkt = RUDP(dst_port=pkt.dst_port, seq_num=seq_num, ack_num=ack_num, message=chunk)
+            sock.sendto(bytes(pkt), client_address)
+
+            # Wait for ACK packet from client
+            ack_received = False
+            while not ack_received:
+                data, addr = sock.recvfrom(RUDP_MAX_SIZE - 4000)
+                pkt = RUDP(data)
+                if pkt.flags == 'A' and pkt.ack_num == seq_num + len(chunk):
+                    ack_received = True
+
+            seq_num += len(chunk)
+        fin_requested = False
+        while not fin_requested:
+            data, addr = sock.recvfrom(RUDP_MAX_SIZE)
+            pkt = RUDP(data)
+            if pkt.flags == "F":
+                fin_requested = True
+
+        # Send FIN packet to client
+        fin_packet = RUDP(dst_port=client_address[1], flags=['F','A'], seq_num=seq_num, ack_num=ack_num)
+        sock.sendto(bytes(fin_packet),client_address)
+        fin_ack = False
+        while not fin_ack:
+            data, addr = sock.recvfrom(RUDP_MAX_SIZE)
+            pkt = RUDP(data)
+            print(pkt.show())
+            if pkt.flags == 'A':
+                fin_ack = True
+
+    # return
+
+
+if __name__ == "__main__":
+    # create RUDP thread
+    rudp_thread = threading.Thread(target=rudp_connection)
+    rudp_thread.start()
+
+    # create TCP thread
+    tcp_thread = threading.Thread(target=tcp_listen)
+    tcp_thread.start()
+
+    # wait for threads to finish
+    rudp_thread.join()
+    tcp_thread.join()
 
