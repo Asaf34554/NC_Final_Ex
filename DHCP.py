@@ -32,7 +32,6 @@ def handle_dhcp(p):
         for i, used in _ip_list.items():
             if not used:
                 ip = i
-                _ip_list[i] = True
                 print(f"ip is:{ip}")
                 break
             else:
@@ -53,6 +52,7 @@ def handle_dhcp(p):
 
     if DHCP in p and p[DHCP].options[0][1] == 3:
         print("DHCP Request")
+        _ip_list[p[IP].src] = True
         ack = Ether(src=mac, dst=p[Ether].src) / \
                 IP(src= dhcp_ip,dst=p[IP].src) / \
                 UDP(sport=67, dport=68) / \
