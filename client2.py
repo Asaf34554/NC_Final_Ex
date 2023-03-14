@@ -33,13 +33,11 @@ class RUDP(Packet):
 def rudp_connecet(msg_num):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(CLIENT_ADDRESS)
-    # sock.settimeout(1.5)
     pkt = RUDP(src_port = CLIENT_ADDRESS[1],flags = "S",seq_num = 0)
     sock.sendto(bytes(pkt),SERVER_ADDRESS)
     ack_syn_received = False
     ack_num=0
-    while not ack_syn_received:
-        # time.sleep(0.2)
+    while not ack_syn_received
         data, addr = sock.recvfrom(RUDP_MAX_SIZE)
         pkt = RUDP(data)
         if pkt.flags == ['S','A'] and pkt.seq_num == 0:
@@ -53,32 +51,20 @@ def rudp_connecet(msg_num):
     image_bytes = io.BytesIO()
     expected_seq_num = 1
     while True:
-        # Wait for packet from server
-        # time.sleep(0.3)
         data, addr = sock.recvfrom(RUDP_MAX_SIZE)
         pkt = RUDP(data)
-
-        # Check packet sequence number
         if pkt.seq_num == expected_seq_num:
             # Write payload to image buffer
             image_bytes.write(pkt.message)
             expected_seq_num += len(pkt.message)
-
-            # Send ACK packet to server
             ack_packet = RUDP(dst_port=pkt.src_port, flags="A", seq_num=pkt.ack_num, ack_num=expected_seq_num)
             sock.sendto(bytes(ack_packet), SERVER_ADDRESS)
-
-            # Check for end of image
-            # print(pkt.message)
             if len(pkt.message) < RUDP_MAX_SIZE - 4000:
                 break
         else:
-            # Send ACK packet to server for last correctly received packet
             ack_packet = RUDP(dst_port=pkt.src_port, flags="A", seq_num=pkt.ack_num, ack_num=expected_seq_num)
             sock.sendto(bytes(ack_packet), SERVER_ADDRESS)
-    # img_open = Image.open(image_bytes)
-    # img_open.show()
-    # time.sleep(0.3)
+
     ack_packet = RUDP(dst_port=pkt.src_port, flags="A", seq_num=pkt.seq_num + len(pkt.message),ack_num=expected_seq_num)
     sock.sendto(bytes(ack_packet), SERVER_ADDRESS)
 
@@ -92,36 +78,52 @@ def rudp_connecet(msg_num):
         if pkt.flags == ['F','A']:
             fin_received = True
 
-    # Send ACK packet to server
     ack_packet = RUDP(dst_port=pkt.src_port, flags="A", seq_num=pkt.ack_num, ack_num=pkt.seq_num + 1)
     time.sleep(0.5)
     sock.sendto(bytes(ack_packet), SERVER_ADDRESS)
-
-    # Return image data as bytes
     return image_bytes.getvalue()
 
 
-def Save_or_Show(img):
+def save_or_show(img):
     global IMG_COUNTER
-    print(colored("Do you prefer to save the meme or to show it on the screen?:","red","on_black", attrs=["bold", "underline"]))
-    rod = input(colored("<1>:Save.\n<2>:Show.\n", "blue","on_black", attrs=["bold", "underline"]))
-    # _img_num =0
-    if rod == '1' or rod.upper() == "SAVE":
-        if isinstance(img,str):
-            response = requests.get(img.encode('utf-8'))
-            img1 = Image.open(BytesIO(response.content))
-            img1.save(f'/home/meme_{IMG_COUNTER}.jpg')
+    print(colored("Do you prefer to save the meme or to show it on the screen?:","red","on_black",
+                  attrs=["bold", "underline"]))
+    holder = True
+    while holder is True:
+        rod = input(colored("<1>:Save.\n<2>:Show.\n", "blue","on_black", attrs=["bold", "underline"]))
+        # _img_num =0
+        if rod == '1' or rod.upper() == "SAVE":
+            file_name = input("Enter file name (without extension!): ")
+            if isinstance(img,str):
+                response = requests.get(img.encode('utf-8'))
+                img1 = Image.open(BytesIO(response.content))
+                if file_name is None:
+                    img1.save(os.path.join(os.path.expanduser("~"), "Desktop", f'meme_{IMG_COUNTER}.jpg'))
+                    IMG_COUNTER += 1
+                else:
+                    img1.save(os.path.join(os.path.expanduser("~"), "Desktop", f'{file_name}.jpg'))
+                print(colored("It has been save in the Desktop", "green", "on_white",
+                              attrs=["bold", "underline"]))
+            else:
+                img = Image.open(BytesIO(img))
+                if file_name is None:
+                    img.save(os.path.join(os.path.expanduser("~"), "Desktop", f'meme_{IMG_COUNTER}.jpg'))
+                    IMG_COUNTER += 1
+                else:
+                    img.save(os.path.join(os.path.expanduser("~"), "Desktop", f'{file_name}.jpg'))
+                print(colored("It has been save in the Desktop", "green", "on_white",
+                              attrs=["bold", "underline"]))
+            holder = False
+        elif rod == '2' or rod.upper() == "SHOW":
+            if isinstance(img, str):
+                get_meme(img)
+            elif isinstance(img,bytes):
+                img = Image.open(io.BytesIO(img))
+                img.show()
+            holder = False
         else:
-            img.save(f'/home/meme_{IMG_COUNTER}.jpg')
-        IMG_COUNTER +=1
-    elif rod == '2' or rod.upper() == "SHOW":
-        if isinstance(img, str):
-            get_meme(img)
-        elif isinstance(img,bytes):
-            img = Image.open(io.BytesIO(img))
-            img.show()
-        else:
-            print("Wrong format")
+            print(colored("Worng number, please choose again:", "red", "on_white",
+                          attrs=["bold", "underline"]))
 
 
 def get_meme(url):
@@ -151,43 +153,58 @@ def connect_tcp(msg_num):
 if __name__ == '__main__':
     #
 
-    print(colored("Welcome to the Meme Generator App","yellow","on_black",attrs=["bold","underline"]))
+    print(colored("Welcome to the Meme Generator App","yellow","on_black",
+                  attrs=["bold","underline"]))
     while True:
-        proto=input(colored("Choose the Protocol type you want to communicate with:\n<1>:TCP.\n<2>:RUDP.\n<9>:Quit App\n","red","on_black",attrs=["bold","underline"]))
+        proto=input(colored("Choose the Protocol type you want to communicate with:\n<1>:TCP.\n"
+                            "<2>:RUDP.\n<9>:Quit App\n","red","on_black",
+                            attrs=["bold","underline"]))
         if proto == '1' or proto.upper() == "TCP":
             print(colored("Do you want to choose a meme by yourself or for we to generate a random meme for you?:","red","on_black",attrs=["bold","underline"]))
-            opt=input(colored("<1>:Choose from library.\n<2>:Surprise me!.\n","blue","on_black",attrs=["bold","underline"]))
+            opt=input(colored("<1>:Choose from library.\n<2>:Surprise me!.\n","blue","on_black",
+                              attrs=["bold","underline"]))
             if opt=='1':
-                print(colored("Choose the number of your choice from the Meme-Library:","red","on_black",attrs=["bold","underline"]))
+                print(colored("Choose the number of your choice from the Meme-Library:","red","on_black",
+                              attrs=["bold","underline"]))
                 meme_opt = input(colored("<1>:Frustrated Meme\n<2>:Surprised Meme\n<3>:Angry Meme\n<4>:'Stoned' "
-                                         "Meme\n<5>:Happy Meme\n<6>:Bored Meme\n<7>:Nerd Meme\n","blue","on_black"))
+                                         "Meme\n<5>:Happy Meme\n<6>:Bored Meme\n<7>:Nerd Meme\n<8>:Student "
+                                         "Meme\n<9>:Student 2 Meme\n<10>:Computer Science Meme\n<11>:Parliament "
+                                         "Meme\n<12>:Student 3 Meme\n<13>:Parliament 2 Meme\n<14>:Student 4 Meme\n",
+                                         "blue", "on_black"))
                 meme_opt=str((int(meme_opt)-1))
                 url=connect_tcp(meme_opt)
-                Save_or_Show(url)
+                save_or_show(url)
             elif opt=='2':
                 meme_opt = str(random.randint(0,6))
                 url=connect_tcp(meme_opt)
-                Save_or_Show(url)
+                save_or_show(url)
 
         elif proto == '2' or proto.upper() == "RUDP":
             print(colored("Do you want to choose a meme by yourself or for we to generate a random meme for you?:","red","on_black",attrs=["bold","underline"]))
-            opt=input(colored("<1>:Choose from library.\n<2>:Surprise me!.\n","blue","on_black",attrs=["bold","underline"]))
+            opt=input(colored("<1>:Choose from library.\n<2>:Surprise me!.\n","blue","on_black",
+                              attrs=["bold","underline"]))
             if opt=='1':
-                print(colored("Choose the number of your choice from the Meme-Library:","red","on_black",attrs=["bold","underline"]))
+                print(colored("Choose the number of your choice from the Meme-Library:","red","on_black",
+                              attrs=["bold","underline"]))
                 meme_opt = input(colored("<1>:Frustrated Meme\n<2>:Surprised Meme\n<3>:Angry Meme\n<4>:'Stoned' "
-                                         "Meme\n<5>:Happy Meme\n<6>:Bored Meme\n<7>:Nerd Meme\n","blue","on_black"))
+                                         "Meme\n<5>:Happy Meme\n<6>:Bored Meme\n<7>:Nerd Meme\n<8>:Student "
+                                         "Meme\n<9>:Student 2 Meme\n<10>:Computer Science Meme\n<11>:Parliament "
+                                         "Meme\n<12>:Student 3 Meme\n<13>:Parliament 2 Meme\n<14>:Student 4 Meme\n",
+                                         "blue","on_black"))
                 meme_opt = str(int(meme_opt) - 1)
                 img_bytes=rudp_connecet(meme_opt)
                 # img = Image.open(io.BytesIO(img_bytes))
-                Save_or_Show(img_bytes)
+                save_or_show(img_bytes)
             elif opt=='2':
                 meme_opt = str(random.randint(0,6))
                 img_bytes=rudp_connecet(meme_opt)
                 # img = Image.open(io.BytesIO(img_bytes))
-                Save_or_Show(img_bytes)
+                save_or_show(img_bytes)
 
         elif proto == '9':
-            print(colored("Hope you enjoyed! See you soon :)\n","yellow","on_black",attrs=["bold","underline"]))
+            print(colored("Hope you enjoyed! See you soon :)\n","yellow","on_black",
+                          attrs=["bold","underline"]))
             exit()
         else:
-            print(colored("Input Error, restarting App!\n","black","on_yellow",attrs=["bold","underline"]))
+            print(colored("Input Error, restarting App!\n","black","on_yellow",
+                          attrs=["bold","underline"]))
