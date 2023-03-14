@@ -1,5 +1,4 @@
 import time
-
 from scapy.all import *
 from scapy.layers.dns import *
 
@@ -18,13 +17,11 @@ def handle_dns(p):
              UDP(sport=dns_port)/\
              DNS(rd=1,qd=p[DNS].qd)
         response=sr1(dnsq,verbose=0)
-        print(response.show())
         if response:
             response[IP].src=dns_ip
             response[IP].dst = p[IP].src
             response[UDP].dport = p[UDP].sport
             response[UDP].src = 53
-            print(response.show())
             send(response,verbose=0)
             print(f"Sent DNS response to client: {response[IP].dst}\nDomain:{response[DNSRR].rrname}\nAddress:{response[DNSRR].rdata}\n")
         else:

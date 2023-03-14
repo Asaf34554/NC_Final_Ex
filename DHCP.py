@@ -2,18 +2,21 @@ from scapy.all import *
 from scapy.layers.dhcp import *
 import time
 
-
 mac = get_if_hwaddr("enp0s3")
 conf.iface = 'enp0s3'
 dhcp_ip = "10.168.1.1"
 
-# SERVER_IP = "10.0.2.15"
 _ip_list = {
     "10.168.1.2": False,
     "10.168.1.3": False,
     "10.168.1.4": False,
     "10.168.1.5": False,
-    "10.168.1.6": False
+    "10.168.1.6": False,
+    "10.168.1.7": False,
+    "10.168.1.8": False,
+    "10.168.1.9": False,
+    "10.168.1.10": False,
+    "10.168.1.11": False
 }
 
 
@@ -46,7 +49,7 @@ def handle_dhcp(p):
                                   ("subnet_mask", "255.255.255.0"),
                                   "end"])
             time.sleep(0.2)
-            sendp(offer, iface="enp0s3")
+            sendp(offer, iface="enp0s3", verbose=0)
 
     if DHCP in p and p[DHCP].options[0][1] == 3:
         print("DHCP Request")
@@ -59,8 +62,7 @@ def handle_dhcp(p):
                               ("subnet_mask", "255.255.255.0"),
                               "end"])
         time.sleep(0.2)
-        sendp(ack, iface="enp0s3")
-        print("after sending the ack")
+        sendp(ack, iface="enp0s3", verbose=0)
 
     if DHCP in p and p[DHCP].options[0][1] == 7:
         print("DHCP Release")

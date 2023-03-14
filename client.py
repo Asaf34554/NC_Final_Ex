@@ -16,13 +16,12 @@ def dhcp_connect():
             UDP(sport=68, dport=67) /\
             BOOTP(chaddr=ethernet_src) /\
             DHCP(options=[('message-type', 'discover'), 'end'])
-    sendp(discover, iface="enp0s3")
+    sendp(discover, iface="enp0s3",verbose=0)
     offer = sniff(filter="udp and (port 68 and port 67)", count=1)[0]
     if offer is None:
         print("Error no dhcp offer receive")
         exit()
     else:
-        # print("GOT The Offer")
         yiaddr = offer[BOOTP].yiaddr
         siaddr = offer[IP].src
 
@@ -34,15 +33,10 @@ def dhcp_connect():
                           ("requested_addr",yiaddr),
                           ("server_id",siaddr),
                           "end"])
-    sendp(req, iface="enp0s3")
-    # print("AFTER SENDING THE REQUEST")
+    sendp(req, iface="enp0s3",verbose=0)
     ack = sniff(filter="udp and (port 68 and port 67)", count=1)[0]
-    # print("AFTER GETING THE ACK")
     if ack:
         assigned_ip = ack[BOOTP].yiaddr
-        print(f"Got the ack\nthe new ip is:{assigned_ip} ")
-        lease_time = ack[DHCP].options[0][1]
-        # time.sleep(2)
         return assigned_ip
     else:
         print("Error no dhcp ack receive")
@@ -57,27 +51,25 @@ def dhcp_release():
           DHCP(options=[("message-type", "release"),
                         ("requested_addr", my_new_ip),
                         "end"])
-    sendp(rel, iface="enp0s3")
-    print("AFTER SENDING THE RELEASE")
+    sendp(rel, iface="enp0s3",verbose=0)
 
 
 def get_req():
-    ans=input("Enter the required domain/ip:")
+    ans=input("Enter the required domain:")
     return ans
 
 
 def dns_query(my_ip):
     addorip = get_req()
+    if addorip == "exit":
+        return 0
     client_q = IP(src=my_ip,dst="10.168.1.60")/\
                UDP(sport=random.randint(111,999),dport=53)/\
                DNS(rd=1,qd=DNSQR(qname=addorip))
     cli_port=client_q[UDP].sport
-    send(client_q)
-    # time.sleep(0.5)
+    send(client_q,verbose=0)
     ans = sniff(filter=f"udp and port {cli_port}", count=1)[0]
     if ans:
-        # print(ans.show())
-        # print("SHEAF BEN ZONA LO YAGID SHTA LO YODEA")
         print(f"Received response from DNS server:-->{ans[DNSRR].rdata}\nDomain:-->{ans[DNSRR].rrname}")
         return ans[DNSRR].rdata
     else:
@@ -86,5 +78,7 @@ def dns_query(my_ip):
 
 if __name__ == '__main__':
     my_new_ip = dhcp_connect()
-    dns_resp = dns_query(my_new_ip)
+    dns_resp = 1
+    while dns_resp != 0:
+        dns_resp = dns_query(my_new_ip)
     dhcp_release()
