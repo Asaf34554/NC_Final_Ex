@@ -37,7 +37,7 @@ def rudp_connecet(msg_num):
     sock.sendto(bytes(pkt),SERVER_ADDRESS)
     ack_syn_received = False
     ack_num=0
-    while not ack_syn_received
+    while not ack_syn_received:
         data, addr = sock.recvfrom(RUDP_MAX_SIZE)
         pkt = RUDP(data)
         if pkt.flags == ['S','A'] and pkt.seq_num == 0:
