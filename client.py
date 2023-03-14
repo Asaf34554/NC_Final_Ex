@@ -61,7 +61,7 @@ def get_req():
 
 def dns_query(my_ip):
     addorip = get_req()
-    if addorip == "exit":
+    if addorip.upper() == "EXIT":
         return 0
     client_q = IP(src=my_ip,dst="10.168.1.60")/\
                UDP(sport=random.randint(111,999),dport=53)/\
@@ -70,7 +70,7 @@ def dns_query(my_ip):
     send(client_q,verbose=0)
     ans = sniff(filter=f"udp and port {cli_port}", count=1)[0]
     if ans:
-        print(f"Received response from DNS server:-->{ans[DNSRR].rdata}\nDomain:-->{ans[DNSRR].rrname}")
+        print(f"Received response from:\nIP:-->{ans[DNSRR].rdata}\nDomain:-->{ans[DNSRR].rrname}")
         return ans[DNSRR].rdata
     else:
         print("Couldn't get response from DNS server")
@@ -78,6 +78,7 @@ def dns_query(my_ip):
 
 if __name__ == '__main__':
     my_new_ip = dhcp_connect()
+    print(f"My new IP: {my_new_ip}")
     dns_resp = 1
     while dns_resp != 0:
         dns_resp = dns_query(my_new_ip)

@@ -43,10 +43,8 @@ def rudp_connecet(msg_num):
         if pkt.flags == ['S','A'] and pkt.seq_num == 0:
             ack_num += 1
             ack_syn_received = True
-    print(pkt.show())
 
     pkt_new = RUDP(message=msg_num,seq_num=pkt.seq_num + 1, ack_num=ack_num, dst_port=pkt.src_port, flags='A')
-    print(pkt_new.show())
     sock.sendto(bytes(pkt_new),SERVER_ADDRESS)
     image_bytes = io.BytesIO()
     expected_seq_num = 1
@@ -54,7 +52,6 @@ def rudp_connecet(msg_num):
         data, addr = sock.recvfrom(RUDP_MAX_SIZE)
         pkt = RUDP(data)
         if pkt.seq_num == expected_seq_num:
-            # Write payload to image buffer
             image_bytes.write(pkt.message)
             expected_seq_num += len(pkt.message)
             ack_packet = RUDP(dst_port=pkt.src_port, flags="A", seq_num=pkt.ack_num, ack_num=expected_seq_num)
@@ -140,19 +137,15 @@ def connect_tcp(msg_num):
     client_socket.connect(SERVER_ADDRESS)
 
     client_socket.sendall(msg_num.encode('utf-8'))
-    # print("After sending the request url")
     url_data = b''
 
     url_data += client_socket.recv(1048)
 
-    print(f"after the while\n{url_data.decode()}")
     client_socket.close()
     return url_data.decode()
 
 
 if __name__ == '__main__':
-    #
-
     print(colored("Welcome to the Meme Generator App","yellow","on_black",
                   attrs=["bold","underline"]))
     while True:
@@ -193,12 +186,10 @@ if __name__ == '__main__':
                                          "blue","on_black"))
                 meme_opt = str(int(meme_opt) - 1)
                 img_bytes=rudp_connecet(meme_opt)
-                # img = Image.open(io.BytesIO(img_bytes))
                 save_or_show(img_bytes)
             elif opt=='2':
                 meme_opt = str(random.randint(0,6))
                 img_bytes=rudp_connecet(meme_opt)
-                # img = Image.open(io.BytesIO(img_bytes))
                 save_or_show(img_bytes)
 
         elif proto == '9':

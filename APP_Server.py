@@ -60,12 +60,9 @@ def tcp_connection(client_socket):
     data = b''
     data += client_socket.recv(1024)
     index = data.decode('utf-8')
-    print(int(index))
     message = memes[int(index)][0]
-    print(message)
 
     client_socket.sendall(message.encode('utf-8'))
-    # client_socket.close()
 
 
 def get_image(meme_num):
@@ -80,19 +77,16 @@ def rudp_connection():
         pkt = RUDP()
         client_address = None
         while not syn_received:
-            # time.sleep(0.3)
             data, addr = sock.recvfrom(RUDP_MAX_SIZE)
             pkt = RUDP(data)
             if pkt.flags == 'S':
                 syn_received = True
                 client_address = addr
-        # Send SYN-ACK packet to client
         seq_num = 0
         ack_num = pkt.seq_num + 1
         syn_ack_packet = RUDP(dst_port=pkt.src_port, src_port=SERVER_ADDRESS[1], flags=['S', 'A'], seq_num=seq_num,
                               ack_num=ack_num)
         sock.sendto(bytes(syn_ack_packet), client_address)
-        print(syn_ack_packet.show())
         ack_image_received = False
         while not ack_image_received:
             data, addr = sock.recvfrom(RUDP_MAX_SIZE)
@@ -103,7 +97,6 @@ def rudp_connection():
         image_to_send = get_image(pkt.message)
         chunks = [image_to_send[i:i + RUDP_MAX_SIZE - 4000] for i in range(0, len(image_to_send), RUDP_MAX_SIZE - 4000)]
 
-        # Send packets with image data
         seq_num = pkt.ack_num
         for i, chunk in enumerate(chunks):
             pkt = RUDP(dst_port=pkt.dst_port, seq_num=seq_num, ack_num=ack_num, message=chunk)
@@ -128,11 +121,8 @@ def rudp_connection():
         while not fin_ack:
             data, addr = sock.recvfrom(RUDP_MAX_SIZE)
             pkt = RUDP(data)
-            print(pkt.show())
             if pkt.flags == 'A':
                 fin_ack = True
-
-    # return
 
 
 if __name__ == "__main__":
